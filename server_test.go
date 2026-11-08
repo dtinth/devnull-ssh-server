@@ -349,3 +349,12 @@ func TestUsageWithoutACommand(t *testing.T) {
 		t.Fatalf("got %+v", got)
 	}
 }
+
+func TestUsageShowsThePort(t *testing.T) {
+	if got := (config{Name: "example.com", Port: "2222"}).sshCommand(); got != "ssh -A -p 2222 example.com" {
+		t.Fatalf("got %q", got)
+	}
+	if got := (config{Name: "example.com", Port: "22"}).sshCommand(); got != "ssh -A example.com" {
+		t.Fatalf("got %q", got)
+	}
+}

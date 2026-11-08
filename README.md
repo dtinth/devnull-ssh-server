@@ -3,16 +3,20 @@
 An SSH server that lets anyone commit to [dev-null.sh](https://dev-null.sh) with their own SSH key:
 
 ```sh
-ssh -A <host> commit 'Hello world!'
-echo 'Hello world!' | ssh -A <host> commit
-ssh -A <host> commit --reply 0be0130 'Agreed!'
+ssh -A -p 2222 dev-null.spacet.me commit 'Hello world!'
+echo 'Hello world!' | ssh -A -p 2222 dev-null.spacet.me commit
+ssh -A -p 2222 dev-null.spacet.me commit --reply 0be0130 'Agreed!'
 ```
+
+`dev-null.spacet.me` is the reference server, run by [@dtinth](https://dev-null.sh/@dtinth). Your forwarded agent will
+sign whatever the server you connect to asks, so read [what forwarding your agent means](#what-forwarding-your-agent-means)
+first, or [run your own](#running-it).
 
 `-A` forwards your SSH agent. To leave it out, put this in `~/.ssh/config`:
 
 ```
 Host devnull
-  HostName <host>
+  HostName dev-null.spacet.me
   Port 2222
   ForwardAgent yes
 ```
@@ -56,6 +60,7 @@ that agent instead of your usual one.
 | `DEVNULL_URL`          | `https://dev-null.sh`       | Where commits go (https, or http to localhost)     |
 | `DEVNULL_SSH_HOST_KEY` | `data/ssh_host_ed25519_key` | Host key; an Ed25519 key is made on the first start |
 | `DEVNULL_SSH_NAME`     | `<host>`                    | How the server names itself in its usage text      |
+| `DEVNULL_SSH_PORT`     | the port listened on        | The port clients connect to, for the usage text    |
 
 ```sh
 go run .
@@ -66,6 +71,9 @@ Or with Docker, keeping the host key on a volume, so clients don't see it change
 ```sh
 docker run -p 2222:2222 -v devnull-ssh:/data -e DEVNULL_SSH_NAME=<host> ghcr.io/dtinth/devnull-ssh-server:latest
 ```
+
+The usage text shows the port the server listens on (2222 in the image). When Docker maps another one to it, like
+`-p 22:2222`, set `DEVNULL_SSH_PORT=22` so the usage text shows that one.
 
 Every push to `main` publishes `ghcr.io/dtinth/devnull-ssh-server` for linux/amd64 and linux/arm64, tagged `latest` and
 `sha-<commit>`; a `v1.2.3` tag also publishes `1.2.3`. Pull requests only build it.

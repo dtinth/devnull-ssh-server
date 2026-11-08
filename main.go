@@ -47,7 +47,17 @@ func run() error {
 		return err
 	}
 
-	server := newServer(config{DevnullURL: devnullURL, Name: env("DEVNULL_SSH_NAME", "<host>")}, hostKey)
+	// The port clients use is the one listened on, unless something in between (like Docker) maps another one to it.
+	_, listenPort, err := net.SplitHostPort(listen)
+	if err != nil {
+		return err
+	}
+
+	server := newServer(config{
+		DevnullURL: devnullURL,
+		Name:       env("DEVNULL_SSH_NAME", "<host>"),
+		Port:       env("DEVNULL_SSH_PORT", listenPort),
+	}, hostKey)
 
 	inner, err := net.Listen("tcp", listen)
 	if err != nil {

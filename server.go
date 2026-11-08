@@ -20,14 +20,22 @@ import (
 // maxBodyBytes caps what is read from stdin: far more than dev-null.sh lets a commit be.
 const maxBodyBytes = 64 << 10
 
+// usage takes the ssh command that reaches this server, then its host name and port.
 const usage = `Commit to dev-null.sh with your own SSH key, through your forwarded SSH agent:
 
-  ssh -A %[1]s commit 'Hello world!'
-  echo 'Hello world!' | ssh -A %[1]s commit
-  ssh -A %[1]s commit --reply 0be0130 'Agreed!'
+  %[1]s commit 'Hello world!'
+  echo 'Hello world!' | %[1]s commit
+  %[1]s commit --reply 0be0130 'Agreed!'
 
-The key you log in with signs the commit, so it must be on your GitHub account.
--A forwards your agent; "ForwardAgent yes" in ~/.ssh/config does the same.
+Your agent signs with the key of yours that is on your GitHub account.
+-A forwards your agent. To leave it out, put this in ~/.ssh/config:
+
+  Host devnull
+    HostName %[2]s
+    Port %[3]s
+    ForwardAgent yes
+
+Then: ssh devnull commit 'Hello world!'
 `
 
 type config struct {
@@ -35,6 +43,8 @@ type config struct {
 	DevnullURL string
 	// Name is how this server is shown in the usage, like "dev-null.example.com".
 	Name string
+	// Port is the port clients connect to, shown in the usage; 22 when empty.
+	Port string
 	// HTTPClient sends the commits; newHTTPClient when nil.
 	HTTPClient *http.Client
 	// Now tells the time, for the signed timestamp; time.Now when nil.
@@ -64,11 +74,28 @@ func newServer(cfg config, hostKey gossh.Signer) *ssh.Server {
 	return server
 }
 
+func (cfg config) port() string {
+	if cfg.Port == "" {
+		return "22"
+	}
+
+	return cfg.Port
+}
+
+// sshCommand is the command that reaches this server with the agent forwarded, like "ssh -A -p 2222 example.com".
+func (cfg config) sshCommand() string {
+	if cfg.port() == "22" {
+		return "ssh -A " + cfg.Name
+	}
+
+	return "ssh -A -p " + cfg.port() + " " + cfg.Name
+}
+
 // handle runs one SSH session, and returns its exit status.
 func handle(cfg config, s ssh.Session) int {
 	command, rest := nextWord(s.RawCommand())
 	if command != "commit" {
-		fmt.Fprintf(s.Stderr(), usage, cfg.Name)
+		fmt.Fprintf(s.Stderr(), usage, cfg.sshCommand(), cfg.Name, cfg.port())
 		if command == "" || command == "help" {
 			return 0
 		}
@@ -88,7 +115,7 @@ func handle(cfg config, s ssh.Session) int {
 	if message == nil {
 		// A terminal sends Ctrl-D as a byte, not as the end of input, so the message would never end.
 		if _, _, isPty := s.Pty(); isPty {
-			return fail(s, "Pass the message as an argument, or pipe it in: echo 'Hello world!' | ssh -A "+cfg.Name+" commit")
+			return fail(s, "Pass the message as an argument, or pipe it in: echo 'Hello world!' | "+cfg.sshCommand()+" commit")
 		}
 
 		body, err := io.ReadAll(io.LimitReader(s, maxBodyBytes+1))
