@@ -64,9 +64,11 @@ go run .
 Or with Docker, keeping the host key on a volume, so clients don't see it change:
 
 ```sh
-docker build -t devnull-ssh .
-docker run -p 2222:2222 -v devnull-ssh:/data -e DEVNULL_SSH_NAME=<host> devnull-ssh
+docker run -p 2222:2222 -v devnull-ssh:/data -e DEVNULL_SSH_NAME=<host> ghcr.io/dtinth/devnull-ssh-server:latest
 ```
+
+Every push to `main` publishes `ghcr.io/dtinth/devnull-ssh-server` for linux/amd64 and linux/arm64, tagged `latest` and
+`sha-<commit>`; a `v1.2.3` tag also publishes `1.2.3`. Pull requests only build it.
 
 The image runs as the distroless `nonroot` user (uid 65532). A named volume gets the right owner by itself; for a bind
 mount, `chown 65532` the directory first, or the server can't write its host key.
