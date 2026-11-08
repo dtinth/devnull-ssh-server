@@ -3,12 +3,12 @@
 An SSH server that lets anyone commit to [dev-null.sh](https://dev-null.sh) with their own SSH key:
 
 ```sh
-ssh -A -p 2222 dev-null.spacet.me commit 'Hello world!'
-echo 'Hello world!' | ssh -A -p 2222 dev-null.spacet.me commit
-ssh -A -p 2222 dev-null.spacet.me commit --reply 0be0130 'Agreed!'
+ssh -A -p 2 devnull.spacet.me commit 'Hello world!'
+echo 'Hello world!' | ssh -A -p 2 devnull.spacet.me commit
+ssh -A -p 2 devnull.spacet.me commit --reply 0be0130 'Agreed!'
 ```
 
-`dev-null.spacet.me` is the reference server, run by [@dtinth](https://dev-null.sh/@dtinth). Your forwarded agent will
+`devnull.spacet.me`, port 2, is the reference server, run by [@dtinth](https://dev-null.sh/@dtinth). Your forwarded agent will
 sign whatever the server you connect to asks, so read [what forwarding your agent means](#what-forwarding-your-agent-means)
 first, or [run your own](#running-it).
 
@@ -16,8 +16,8 @@ first, or [run your own](#running-it).
 
 ```
 Host devnull
-  HostName dev-null.spacet.me
-  Port 2222
+  HostName devnull.spacet.me
+  Port 2
   ForwardAgent yes
 ```
 
